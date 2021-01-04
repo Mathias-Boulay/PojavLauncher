@@ -24,6 +24,8 @@ import java.util.*;
 
 public class GLFW
 {
+	static FloatBuffer joystickData = (FloatBuffer)FloatBuffer.allocate(8).flip();
+	static ByteBuffer buttonData = (ByteBuffer)ByteBuffer.allocate(8).flip();
     /** The major version number of the GLFW library. This is incremented when the API is changed in non-compatible ways. */
     public static final int GLFW_VERSION_MAJOR = 3;
 
@@ -1221,4 +1223,51 @@ public class GLFW
     public static String glfwGetClipboardString(@NativeType("GLFWwindow *") long window) {
         return CallbackBridge.nativeClipboard(CallbackBridge.CLIPBOARD_PASTE, null);
     }
+
+    public static boolean glfwJoystickPresent(int jid) {
+		if(jid == 0) {
+			return true;
+		}else return false;
+	}
+    public static String glfwGetJoystickName(int jid) {
+    	if(jid == 0) {
+			return "AIC event bus controller";
+		}else return null;
+	}
+	public static FloatBuffer glfwGetJoystickAxes(int jid) {
+    	if(jid == 0) {
+    		return joystickData;
+		}else return null;
+	}
+	public static ByteBuffer glfwGetJoystickButtons(int jid) {
+		if(jid == 0) {
+			return buttonData;
+		}else return null;
+	}
+	public static ByteBuffer glfwGetjoystickHats(int jid) {
+        return null;
+	}
+	public static boolean glfwJoystickIsGamepad(int jid) {
+    	if(jid == 0) return true;
+    	else return false;
+	}
+	public static String glfwGetJoystickGUID(int jid) {
+    	if(jid == 0) return "aio0";
+    	else return null;
+	}
+	public static long glfwGetJoystickUserPointer(int jid) {
+    	return 0;
+	}
+	public static void glfwSetJoystickUserPointer(int jid, long pointer) {
+
+	}
+	public static boolean glfwUpdateGamepadMappings(ByteBuffer string) {
+return false;
+	}
+	public static String glfwGetGamepadName(int jid) {
+    	return null;
+	}
+	public static boolean glfwGetGamepadState(int jid, GLFWGamepadState state) {
+    	return false;
+	}
 }

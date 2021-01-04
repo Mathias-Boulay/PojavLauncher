@@ -1,5 +1,7 @@
 package org.lwjgl.glfw;
 import java.io.*;
+import java.nio.ByteBuffer;
+import java.nio.FloatBuffer;
 import java.util.*;
 import android.widget.*;
 import net.kdt.pojavlaunch.*;
@@ -55,7 +57,8 @@ public class CallbackBridge {
 */
 
         //nativeSendKeycode(keycode, keychar, scancode, isDown ? 1 : 0, modifiers);
-        nativeSendKey(keycode,scancode,isDown ? 1 : 0, modifiers);
+        if(keycode != 0)  nativeSendKey(keycode,scancode,isDown ? 1 : 0, modifiers);
+        else nativeSendKey(32,scancode,isDown ? 1 : 0, modifiers);
         if(isDown && keychar != '\u0000') {
             nativeSendCharMods(keychar,modifiers);
             nativeSendChar(keychar);
@@ -163,7 +166,8 @@ public class CallbackBridge {
     private static native void nativeSendScreenSize(int width, int height);
     
     public static native boolean nativeIsGrabbing();
-    
+    public static native void nativePutControllerAxes(FloatBuffer axBuf);
+    public static native void nativePutControllerButtons(ByteBuffer axBuf);
     static {
         System.loadLibrary("pojavexec");
     }

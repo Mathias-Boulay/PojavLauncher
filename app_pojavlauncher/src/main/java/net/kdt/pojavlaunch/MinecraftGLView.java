@@ -9,47 +9,42 @@ import android.view.*;
 import android.view.inputmethod.BaseInputConnection;
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputConnection;
-import android.widget.TextView;
-
-import org.lwjgl.glfw.CallbackBridge;
+import android.view.inputmethod.InputMethodManager;
 
 public class MinecraftGLView extends TextureView
 {
-    volatile BaseMainActivity ctx;
-	// private View.OnTouchListener mTouchListener;
     public MinecraftGLView(Context context) {
         super(context);
 		//setPreserveEGLContextOnPause(true);
-        ctx = (BaseMainActivity) context;
+        setOnFocusChangeListener(new OnFocusChangeListener() {
+            @Override
+            public void onFocusChange(View view, boolean b) {
+                if(!b) {
+                    ((InputMethodManager)view.getContext().getSystemService(Context.INPUT_METHOD_SERVICE)).hideSoftInputFromWindow(view.getWindowToken(),0);
+                }
+            }
+        });
+
     }
 
     public MinecraftGLView(Context context, AttributeSet attributeSet) {
         super(context, attributeSet);
-		//setPreserveEGLContextOnPause(true);
+        setOnFocusChangeListener(new OnFocusChangeListener() {
+            @Override
+            public void onFocusChange(View view, boolean b) {
+                if(!b) {
+                    ((InputMethodManager)view.getContext().getSystemService(Context.INPUT_METHOD_SERVICE)).hideSoftInputFromWindow(view.getWindowToken(),0);
+                }
+            }
+        });
     }
 
     @Override
     public InputConnection onCreateInputConnection(EditorInfo outAttrs) {
         outAttrs.inputType = EditorInfo.TYPE_NULL;
-        if(!isHardKB(this.getContext())) {
-            return new MyInputConnection(this, false);
-        }else{
-            return new BaseInputConnection(this,false);
-        }
+        Log.d("TypeableGLView","onCreateInputConnection");
+            return new MinecraftInputConnection(this, false);
     }
-
-    @Override
-    public boolean onKeyUp(int keyCode, KeyEvent event) {
-        AndroidLWJGLKeycode.execKey(event,keyCode,false);
-        return true;
-    }
-
-    @Override
-    public boolean onKeyDown(int keyCode, KeyEvent event) {
-        AndroidLWJGLKeycode.execKey(event,keyCode,true);
-        return true;
-    }
-
     @Override
     public boolean onCheckIsTextEditor() {
         return false;
@@ -58,10 +53,10 @@ public class MinecraftGLView extends TextureView
         return ctx.getResources().getConfiguration().keyboard == Configuration.KEYBOARD_QWERTY;
     }
 }
-class MyInputConnection extends BaseInputConnection {
+class MinecraftInputConnection extends BaseInputConnection {
     private SpannableStringBuilder _editable;
     BaseMainActivity parent;
-    public MyInputConnection(View targetView, boolean fullEditor) {
+    public MinecraftInputConnection(View targetView, boolean fullEditor) {
         super(targetView, fullEditor);
 
         parent = (BaseMainActivity)targetView.getContext();
@@ -76,9 +71,7 @@ class MyInputConnection extends BaseInputConnection {
     }
 
     public boolean commitText(CharSequence text, int newCursorPosition) {
-        Log.d("EnhancedTextInput","Text committed: "+text);
-        parent.sendKeyPress(text.charAt(0
-        ));
+        parent.sendKeyPress(text.charAt(0));
         return true;
     }
 
