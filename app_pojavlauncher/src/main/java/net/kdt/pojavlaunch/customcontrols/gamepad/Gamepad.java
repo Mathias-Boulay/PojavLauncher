@@ -156,8 +156,8 @@ public class Gamepad {
 
         gameMap.DPAD_UP.keycodes = new int[]{LWJGLGLFWKeycode.GLFW_KEY_F3};
         gameMap.DPAD_DOWN.keycodes = new int[]{LWJGLGLFWKeycode.GLFW_KEY_F2};
-        gameMap.DPAD_RIGHT.keycodes = new int[]{LWJGLGLFWKeycode.GLFW_KEY_F11};
-        gameMap.DPAD_LEFT.keycodes = new int[]{LWJGLGLFWKeycode.GLFW_KEY_F5};
+        gameMap.DPAD_RIGHT.keycodes = new int[]{};
+        gameMap.DPAD_LEFT.keycodes = new int[]{};
 
         gameMap.SHOULDER_LEFT.keycodes = new int[]{GamepadMapping.MOUSE_SCROLL_UP};
         gameMap.SHOULDER_RIGHT.keycodes = new int[]{GamepadMapping.MOUSE_SCROLL_DOWN};
@@ -167,7 +167,7 @@ public class Gamepad {
 
         gameMap.THUMBSTICK_LEFT.keycodes = new int[]{LWJGLGLFWKeycode.GLFW_KEY_LEFT_SHIFT};
         gameMap.THUMBSTICK_LEFT.isToggleable = true;
-        gameMap.THUMBSTICK_RIGHT.keycodes = new int[]{};
+        gameMap.THUMBSTICK_RIGHT.keycodes = new int[]{LWJGLGLFWKeycode.GLFW_KEY_F5};
 
         gameMap.BUTTON_START.keycodes = new int[]{LWJGLGLFWKeycode.GLFW_KEY_ESCAPE};
         gameMap.BUTTON_SELECT.keycodes = new int[]{};
