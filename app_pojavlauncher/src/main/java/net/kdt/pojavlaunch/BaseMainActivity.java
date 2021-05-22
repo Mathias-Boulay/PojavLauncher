@@ -10,15 +10,14 @@ import android.view.View.*;
 import android.view.inputmethod.*;
 import android.widget.*;
 
-import androidx.annotation.NonNull;
 import androidx.drawerlayout.widget.*;
 import com.google.android.material.navigation.*;
 import java.io.*;
 import java.lang.reflect.*;
-import java.nio.ByteBuffer;
-import java.nio.FloatBuffer;
 import java.util.*;
 import net.kdt.pojavlaunch.customcontrols.*;
+import net.kdt.pojavlaunch.customcontrols.gamepad.Gamepad;
+import net.kdt.pojavlaunch.customcontrols.gamepad.GamepadJoystick;
 import net.kdt.pojavlaunch.prefs.*;
 import net.kdt.pojavlaunch.utils.*;
 import net.kdt.pojavlaunch.value.*;
@@ -26,17 +25,18 @@ import org.lwjgl.glfw.*;
 
 public class BaseMainActivity extends LoggableActivity {
     public static volatile ClipboardManager GLOBAL_CLIPBOARD;
-    
-    public static final String initText = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA  ";
+
     volatile public static boolean isInputStackCall;
 
-    private static int[] hotbarKeys = {
+    private static final int[] hotbarKeys = {
         LWJGLGLFWKeycode.GLFW_KEY_1, LWJGLGLFWKeycode.GLFW_KEY_2,   LWJGLGLFWKeycode.GLFW_KEY_3,
         LWJGLGLFWKeycode.GLFW_KEY_4, LWJGLGLFWKeycode.GLFW_KEY_5,   LWJGLGLFWKeycode.GLFW_KEY_6,
         LWJGLGLFWKeycode.GLFW_KEY_7, LWJGLGLFWKeycode.GLFW_KEY_8, LWJGLGLFWKeycode.GLFW_KEY_9};
 
+    private Gamepad gamepad;
+
     private boolean rightOverride = false;
-    private float scaleFactor = 1;
+    public float scaleFactor = 1;
     private int fingerStillThreshold = 8;
     private int initialX, initialY;
     private int scrollInitialX, scrollInitialY;
@@ -69,7 +69,6 @@ public class BaseMainActivity extends LoggableActivity {
     private int guiScale;
     private DisplayMetrics displayMetrics;
     public boolean hiddenTextIgnoreUpdate = true;
-    public String hiddenTextContents = initText;
     
     private boolean isVirtualMouseEnabled;
     private LinearLayout touchPad;
@@ -110,7 +109,8 @@ public class BaseMainActivity extends LoggableActivity {
     private boolean lastGrab = false;
     private boolean isExited = false;
     private boolean isLogAllow = false;
-    private volatile int mouse_x, mouse_y;
+
+    public volatile int mouse_x, mouse_y;
     // private int navBarHeight = 40;
     
     // private static Collection<? extends Provider.Service> rsaPkcs1List;
@@ -240,37 +240,23 @@ public class BaseMainActivity extends LoggableActivity {
                             if (lastGrab != CallbackBridge.isGrabbing())
                             mousePointer.post(new Runnable(){
 
-                                    @Override
-                                    public void run()
-                                    {
-                                        if (!CallbackBridge.isGrabbing() && isVirtualMouseEnabled) {
-                                            touchPad.setVisibility(View.VISIBLE);
-                                            placeMouseAt(displayMetrics.widthPixels / 2, displayMetrics.heightPixels / 2);
-                                        }
-
-                                        if (CallbackBridge.isGrabbing() && touchPad.getVisibility() != View.GONE) {
-                                            touchPad.setVisibility(View.GONE);
-                                        }
-                                        /*
-                                        if (isAndroid8OrHigher()) {
-                                            if (!CallbackBridge.isGrabbing() && isCapturing) {
-                                                minecraftGLView.releasePointerCapture();
-                                                minecraftGLView.clearFocus();
-                                                isCapturing = false;
-                                            } else if (CallbackBridge.isGrabbing() && !isCapturing) {
-                                                minecraftGLView.requestFocus();
-                                                minecraftGLView.requestPointerCapture();
-                                                isCapturing = true;
-                                            }
-                                        }
-                                        */
-                                        lastGrab = CallbackBridge.isGrabbing();
+                                @Override
+                                public void run()
+                                {
+                                    if (!CallbackBridge.isGrabbing() && isVirtualMouseEnabled) {
+                                        touchPad.setVisibility(View.VISIBLE);
+                                        placeMouseAt(displayMetrics.widthPixels / 2, displayMetrics.heightPixels / 2);
                                     }
-                                });
 
-                            // try {
-                            //     Thread.sleep(100);
-                            // } catch (Throwable th) {}
+                                    if (CallbackBridge.isGrabbing() && touchPad.getVisibility() != View.GONE) {
+                                        touchPad.setVisibility(View.GONE);
+                                    }
+
+                                    lastGrab = CallbackBridge.isGrabbing();
+                                }
+                            });
+
+
                         }
                     }
                 }, "VirtualMouseGrabThread").start();
@@ -333,6 +319,7 @@ public class BaseMainActivity extends LoggableActivity {
                                     break;
                                     
                                 case MotionEvent.ACTION_MOVE: // 2
+
                                     if (!CallbackBridge.isGrabbing() && event.getPointerCount() == 2 && !LauncherPreferences.PREF_DISABLE_GESTURES) {
                                         CallbackBridge.sendScroll(CallbackBridge.mouseX - scrollInitialX, CallbackBridge.mouseY - scrollInitialY);
                                         scrollInitialX = CallbackBridge.mouseX;
@@ -370,8 +357,7 @@ public class BaseMainActivity extends LoggableActivity {
                 private boolean isTouchInHotbar = false;
                 private int hotbarX, hotbarY;
                 @Override
-                public boolean onTouch(View p1, MotionEvent e)
-                {
+                public boolean onTouch(View p1, MotionEvent e) {
 
                     {
                         int mptrIndex = -1;
@@ -507,94 +493,7 @@ public class BaseMainActivity extends LoggableActivity {
                                 break;
                         }
                     }
-                    
-/*
-                    int x = ((int) e.getX()) * scaleFactor;
-                    int y = (minecraftGLView.getHeight() - ((int) e.getY())) * scaleFactor;
-                    int hudKeyHandled = handleGuiBar(x, y, e);
-                    if (!CallbackBridge.isGrabbing() && gestureDetector.onTouchEvent(e)) {
-                        if (hudKeyHandled != -1) {
-                            sendKeyPress(hudKeyHandled);
-                        } else {
-                            CallbackBridge.sendMouseEvent(
-                                x, CallbackBridge.windowHeight - y,
-                                rightOverride ? LWJGLGLFWKeycode.GLFW_MOUSE_BUTTON_RIGHT : LWJGLGLFWKeycode.GLFW_MOUSE_BUTTON_LEFT
-                            );
-                            if (!rightOverride) {
-                                CallbackBridge.mouseLeft = true;
-                            }
-                        }
-                    } else {
-                        switch (e.getActionMasked()) {
-                            case MotionEvent.ACTION_DOWN: // 0
-                            case MotionEvent.ACTION_POINTER_DOWN: // 5
-                                isTouchInHotbar = hudKeyHandled != -1;
-                                if (isTouchInHotbar) {
-                                    sendKeyPress(hudKeyHandled, 0, true);
-                                    hotbarX = x;
-                                    hotbarY = y;
 
-                                    theHandler.sendEmptyMessageDelayed(MainActivity.MSG_DROP_ITEM_BUTTON_CHECK, LauncherPreferences.PREF_LONGPRESS_TRIGGER);
-                                } else {
-                                    CallbackBridge.sendCursorPos(x, CallbackBridge.windowHeight - y);
-                                    
-                                    // if (!rightOverride)
-                                        // CallbackBridge.mouseLeft = true;
-                                    
-                                    
-
-                                    if (CallbackBridge.isGrabbing()) {
-                                        CallbackBridge.sendMouseKeycode(rightOverride ? LWJGLGLFWKeycode.GLFW_MOUSE_BUTTON_RIGHT : LWJGLGLFWKeycode.GLFW_MOUSE_BUTTON_LEFT, 0, true);
-                                        initialX = x;
-                                        initialY = y;
-                                        theHandler.sendEmptyMessageDelayed(MainActivity.MSG_LEFT_MOUSE_BUTTON_CHECK, LauncherPreferences.PREF_LONGPRESS_TRIGGER);
-                                    }
-                                }
-                                break;
-                            case MotionEvent.ACTION_UP: // 1
-                            case MotionEvent.ACTION_CANCEL: // 3
-                            case MotionEvent.ACTION_POINTER_UP: // 6
-                                if (!isTouchInHotbar) {
-                                    CallbackBridge.sendCursorPos(x, CallbackBridge.windowHeight - y);
-
-                                    // TODO uncomment after fix wrong trigger
-                                    // CallbackBridge.putMouseEventWithCoords(rightOverride ? (byte) 1 : (byte) 0, (byte) 0, x, y);
-                                    if (!rightOverride) {
-                                        // CallbackBridge.mouseLeft = false;
-                                    }
-                                } 
-
-                                if (CallbackBridge.isGrabbing()) {
-                                    // System.out.println((String) ("[Math.abs(" + initialX + " - " + x + ") = " + Math.abs(initialX - x) + "] < " + fingerStillThreshold));
-                                    // System.out.println((String) ("[Math.abs(" + initialY + " - " + y + ") = " + Math.abs(initialY - y) + "] < " + fingerStillThreshold));
-                                    if (isTouchInHotbar && Math.abs(hotbarX - x) < fingerStillThreshold && Math.abs(hotbarY - y) < fingerStillThreshold) {
-                                        sendKeyPress(hudKeyHandled, 0, false);
-                                    } else if (!triggeredLeftMouseButton && Math.abs(initialX - x) < fingerStillThreshold && Math.abs(initialY - y) < fingerStillThreshold) {
-                                        sendMouseButton(LWJGLGLFWKeycode.GLFW_MOUSE_BUTTON_RIGHT, true);
-                                        sendMouseButton(LWJGLGLFWKeycode.GLFW_MOUSE_BUTTON_RIGHT, false);
-                                    }
-                                    if (!isTouchInHotbar) {
-                                        if (triggeredLeftMouseButton) {
-                                            sendMouseButton(LWJGLGLFWKeycode.GLFW_MOUSE_BUTTON_LEFT, false);
-                                        }
-                                        triggeredLeftMouseButton = false;
-                                        theHandler.removeMessages(MainActivity.MSG_LEFT_MOUSE_BUTTON_CHECK);
-                                    } else {
-                                        sendKeyPress(LWJGLGLFWKeycode.GLFW_KEY_Q, 0, false);
-                                        theHandler.removeMessages(MSG_DROP_ITEM_BUTTON_CHECK);
-                                    }
-                                }
-                                break;
-
-                            default:
-                                if (!isTouchInHotbar) {
-                                    CallbackBridge.sendCursorPos(x, CallbackBridge.windowHeight - y);
-                                }
-                                break;
-                                
-                        }
-                    }
-                    */
                     
                     debugText.setText(CallbackBridge.DEBUG_STRING.toString());
                     CallbackBridge.DEBUG_STRING.setLength(0);
@@ -736,70 +635,54 @@ public class BaseMainActivity extends LoggableActivity {
         }
     }
 
-    /*
-    @Override
-    public boolean dispatchKeyEvent(KeyEvent event) {
-        switch (event.getAction()) {
-            case KeyEvent.ACTION_DOWN:
-                AndroidLWJGLKeycode.execKey(event, event.getKeyCode(), true);
-                break;
-                
-            case KeyEvent.ACTION_UP:
-                AndroidLWJGLKeycode.execKey(event, event.getKeyCode(), false);
-                break;
-        }
-        
-        return super.dispatchKeyEvent(event);
-    }
-    */
+
+
     @Override
     public boolean dispatchGenericMotionEvent(MotionEvent ev) {
         int mouseCursorIndex = -1;
-        if(ev.getSource() == InputDevice.SOURCE_CLASS_JOYSTICK) {
-            CallbackBridge.nativePutControllerAxes((FloatBuffer)FloatBuffer.allocate(8)
-                    .put(ev.getAxisValue(MotionEvent.AXIS_X))
-                    .put(ev.getAxisValue(MotionEvent.AXIS_Y))
-                    .put(ev.getAxisValue(MotionEvent.AXIS_Z))
-                    .put(ev.getAxisValue(MotionEvent.AXIS_RX))
-                    .put(ev.getAxisValue(MotionEvent.AXIS_RY))
-                    .put(ev.getAxisValue(MotionEvent.AXIS_RZ))
-                    .put(ev.getAxisValue(MotionEvent.AXIS_HAT_X))
-                    .put(ev.getAxisValue(MotionEvent.AXIS_HAT_Y))
-            .flip());
-            return true;//consume the cum chalice
-        }else {
-            for(int i = 0; i < ev.getPointerCount(); i++) {
-                if(ev.getToolType(i) == MotionEvent.TOOL_TYPE_MOUSE) {
-                    mouseCursorIndex = i;
-                }
+
+        if(Gamepad.isGamepadEvent(ev)){
+            if(gamepad == null){
+                gamepad = new Gamepad(this, Tools.grabFirstGamepad());
             }
-            if(mouseCursorIndex == -1) return false; // we cant consoom that, theres no mice!
-            if(CallbackBridge.isGrabbing()) {
-                if(BaseMainActivity.isAndroid8OrHigher()) minecraftGLView.requestPointerCapture();
-            }
-            switch(ev.getActionMasked()) {
-                case MotionEvent.ACTION_HOVER_MOVE:
-                    mouse_x = (int) (ev.getX(mouseCursorIndex) * scaleFactor);
-                    mouse_y = (int) (ev.getY(mouseCursorIndex) * scaleFactor);
-                    CallbackBridge.mouseX = mouse_x;
-                    CallbackBridge.mouseY = mouse_y;
-                    CallbackBridge.sendCursorPos(mouse_x,mouse_y);
-                    debugText.setText(CallbackBridge.DEBUG_STRING.toString());
-                    CallbackBridge.DEBUG_STRING.setLength(0);
-                    return true;
-                case MotionEvent.ACTION_SCROLL:
-                    CallbackBridge.sendScroll((double) ev.getAxisValue(MotionEvent.AXIS_VSCROLL), (double) ev.getAxisValue(MotionEvent.AXIS_HSCROLL));
-                    return true;
-                case MotionEvent.ACTION_BUTTON_PRESS:
-                     return sendMouseButtonUnconverted(ev.getActionButton(),true);
-                case MotionEvent.ACTION_BUTTON_RELEASE:
-                    return sendMouseButtonUnconverted(ev.getActionButton(),false);
-                default:
-                    return false;
-            }
+
+            gamepad.update(ev);
+            return true;
         }
 
+        for(int i = 0; i < ev.getPointerCount(); i++) {
+            if(ev.getToolType(i) == MotionEvent.TOOL_TYPE_MOUSE) {
+                mouseCursorIndex = i;
+            }
+        }
+        if(mouseCursorIndex == -1) return false; // we cant consoom that, theres no mice!
+        if(CallbackBridge.isGrabbing()) {
+            if(BaseMainActivity.isAndroid8OrHigher()) minecraftGLView.requestPointerCapture();
+        }
+        switch(ev.getActionMasked()) {
+            case MotionEvent.ACTION_HOVER_MOVE:
+                mouse_x = (int) (ev.getX(mouseCursorIndex) * scaleFactor);
+                mouse_y = (int) (ev.getY(mouseCursorIndex) * scaleFactor);
+                CallbackBridge.mouseX = mouse_x;
+                CallbackBridge.mouseY = mouse_y;
+                CallbackBridge.sendCursorPos(mouse_x,mouse_y);
+                debugText.setText(CallbackBridge.DEBUG_STRING.toString());
+                CallbackBridge.DEBUG_STRING.setLength(0);
+                return true;
+            case MotionEvent.ACTION_SCROLL:
+                CallbackBridge.sendScroll((double) ev.getAxisValue(MotionEvent.AXIS_VSCROLL), (double) ev.getAxisValue(MotionEvent.AXIS_HSCROLL));
+                return true;
+            case MotionEvent.ACTION_BUTTON_PRESS:
+                 return sendMouseButtonUnconverted(ev.getActionButton(),true);
+            case MotionEvent.ACTION_BUTTON_RELEASE:
+                return sendMouseButtonUnconverted(ev.getActionButton(),false);
+            default:
+                return false;
+        }
+
+
     }
+
     boolean isKeyboard(KeyEvent evt) {
         System.out.println("Event:" +evt);
         //if((evt.getFlags() & KeyEvent.FLAG_SOFT_KEYBOARD) == KeyEvent.FLAG_SOFT_KEYBOARD) return true;
@@ -808,35 +691,27 @@ public class BaseMainActivity extends LoggableActivity {
         if(AndroidLWJGLKeycode.androidToLwjglMap.containsKey(evt.getKeyCode())) return true;
         return false;
     }
-    byte[] kevArray = new byte[8];
+
+
     @Override
     public boolean dispatchKeyEvent(KeyEvent event) {
-        System.out.println(event.getSource() + " "+ event.getFlags());
-        if(event.getSource() == InputDevice.SOURCE_CLASS_JOYSTICK) {
-            switch(event.getKeyCode()) {
-                case KeyEvent.KEYCODE_BUTTON_A:
-                    kevArray[0]= (byte) ((event.getAction() == KeyEvent.ACTION_DOWN)?1:0);
-                case KeyEvent.KEYCODE_BUTTON_B:
-                    kevArray[1]=(byte) ((event.getAction() == KeyEvent.ACTION_DOWN)?1:0);
-                case KeyEvent.KEYCODE_BUTTON_X:
-                    kevArray[2]=(byte) ((event.getAction() == KeyEvent.ACTION_DOWN)?1:0);
-                case KeyEvent.KEYCODE_BUTTON_Y:
-                    kevArray[3]=(byte) ((event.getAction() == KeyEvent.ACTION_DOWN)?1:0);
-                case KeyEvent.KEYCODE_DPAD_LEFT:
-                    kevArray[4]=(byte) ((event.getAction() == KeyEvent.ACTION_DOWN)?1:0);
-                case KeyEvent.KEYCODE_DPAD_RIGHT:
-                    kevArray[5]=(byte) ((event.getAction() == KeyEvent.ACTION_DOWN)?1:0);
-                case KeyEvent.KEYCODE_DPAD_UP:
-                    kevArray[6]=(byte) ((event.getAction() == KeyEvent.ACTION_DOWN)?1:0);
-                case KeyEvent.KEYCODE_DPAD_DOWN:
-                    kevArray[7]=(byte) ((event.getAction() == KeyEvent.ACTION_DOWN)?1:0);
+        System.out.println(event);
+
+        if(Gamepad.isGamepadEvent(event)){
+            if(gamepad == null){
+                gamepad = new Gamepad(this, Tools.grabFirstGamepad());
             }
-            CallbackBridge.nativePutControllerButtons(ByteBuffer.wrap(kevArray));
+
+            gamepad.update(event);
             return true;
-        }else if(isKeyboard(event)) {
-             AndroidLWJGLKeycode.execKey(event,event.getKeyCode(),event.getAction() == KeyEvent.ACTION_DOWN);
+        }
+
+        if(isKeyboard(event)) {
+            AndroidLWJGLKeycode.execKey(event,event.getKeyCode(),event.getAction() == KeyEvent.ACTION_DOWN);
             return true;
-        }else return false;
+        }
+
+        return false;
     }
 
     //private Dialog menuDial;

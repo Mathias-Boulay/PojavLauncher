@@ -106,7 +106,7 @@ public class AndroidLWJGLKeycode {
         androidToLwjglMap.put(KeyEvent.KEYCODE_GRAVE, LWJGLGLFWKeycode.GLFW_KEY_GRAVE_ACCENT);
         androidToLwjglMap.put(KeyEvent.KEYCODE_HOME, LWJGLGLFWKeycode.GLFW_KEY_HOME);
         androidToLwjglMap.put(KeyEvent.KEYCODE_INSERT, LWJGLGLFWKeycode.GLFW_KEY_INSERT);
-        androidToLwjglMap.put(KeyEvent.KEYCODE_KANA, LWJGLGLFWKeycode.GLFW_KEY_K);
+        //androidToLwjglMap.put(KeyEvent.KEYCODE_KANA, LWJGLGLFWKeycode.GLFW_KEY_K);
         androidToLwjglMap.put(KeyEvent.KEYCODE_LEFT_BRACKET, LWJGLGLFWKeycode.GLFW_KEY_LEFT_BRACKET);
         androidToLwjglMap.put(KeyEvent.KEYCODE_MINUS, LWJGLGLFWKeycode.GLFW_KEY_MINUS);
         
@@ -155,13 +155,16 @@ public class AndroidLWJGLKeycode {
         // androidToLwjglMap.put(KeyEvent.KEYCODE_BUTTON_1, LWJGLGLFWKeycode.G
         androidToLwjglMap.put(KeyEvent.KEYCODE_AT,LWJGLGLFWKeycode.GLFW_KEY_2);
         androidToLwjglMap.put(KeyEvent.KEYCODE_POUND,LWJGLGLFWKeycode.GLFW_KEY_3);
+
+        androidToLwjglMap.put(KeyEvent.KEYCODE_UNKNOWN,LWJGLGLFWKeycode.GLFW_KEY_UNKNOWN);
+
     }
     
     public static String[] generateKeyName() {
         if (androidKeyNameArray == null) {
             List<String> keyName = new ArrayList<String>();
-            for (Integer perKey : androidToLwjglMap.keySet()) {
-                keyName.add(KeyEvent.keyCodeToString(perKey.intValue()).replace("KEYCODE_", ""));
+            for (int perKey : androidToLwjglMap.keySet()) {
+                keyName.add(KeyEvent.keyCodeToString(perKey).replace("KEYCODE_", ""));
             }
             androidKeyNameArray = keyName.toArray(new String[0]);
         }

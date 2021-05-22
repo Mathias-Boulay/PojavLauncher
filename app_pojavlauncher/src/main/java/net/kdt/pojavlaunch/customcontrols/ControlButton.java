@@ -2,6 +2,8 @@ package net.kdt.pojavlaunch.customcontrols;
 
 import android.content.*;
 import android.graphics.*;
+import android.graphics.drawable.GradientDrawable;
+import android.graphics.drawable.ShapeDrawable;
 import android.util.*;
 import android.view.*;
 import android.view.View.*;
@@ -15,31 +17,21 @@ public class ControlButton extends androidx.appcompat.widget.AppCompatButton imp
 {
     private Paint mRectPaint;
     
-    private GestureDetector mGestureDetector;
-    private ControlData mProperties;
-    private SelectionEndHandleView mHandleView;
+    protected GestureDetector mGestureDetector;
+    protected ControlData mProperties;
+    protected SelectionEndHandleView mHandleView;
 
-    private boolean mModifiable = false;
-    private boolean mCanTriggerLongClick = true;
-    
-    private boolean mChecked = false;
-    
-    private float mScaleAt;
+    protected boolean mModifiable = false;
+    protected boolean mCanTriggerLongClick = true;
+
+    protected boolean mChecked = false;
 
     public ControlButton(ControlLayout layout, ControlData properties) {
         super(layout.getContext());
         setPadding(4, 4, 4, 4);
-        setWillNotDraw(false);
-
-        mScaleAt = layout.mLayout.scaledAt;
         
         mGestureDetector = new GestureDetector(getContext(), new SingleTapConfirm());
 
-        if (!LauncherPreferences.PREF_BUTTON_FLAT) {
-            setBackgroundResource(R.drawable.control_button);
-        } else {
-            setBackgroundResource(R.drawable.control_button_black);
-        }
         setOnLongClickListener(this);
 
         setProperties(properties);
@@ -69,7 +61,7 @@ public class ControlButton extends androidx.appcompat.widget.AppCompatButton imp
 
     public void setProperties(ControlData properties, boolean changePos) {
         mProperties = properties;
-        mProperties.transparency = mProperties.hidden ? 100 : mProperties.transparency;
+
         properties.update();
 
         // com.android.internal.R.string.delete
@@ -79,11 +71,7 @@ public class ControlButton extends androidx.appcompat.widget.AppCompatButton imp
             setTranslationX(moveX = properties.x);
             setTranslationY(moveY = properties.y);
         }
-        if (!LauncherPreferences.PREF_BUTTON_FLAT) {
-            setBackgroundResource(mProperties.isRound ? R.drawable.control_button_round : R.drawable.control_button);
-        } else {
-            setBackgroundResource(mProperties.isRound ? R.drawable.control_button_round_black : R.drawable.control_button_black);
-        }
+
         if (properties.specialButtonListener == null) {
             // A non-special button or inside custom controls screen so skip listener
         } else if (properties.specialButtonListener instanceof View.OnClickListener) {
@@ -98,15 +86,36 @@ public class ControlButton extends androidx.appcompat.widget.AppCompatButton imp
                 properties.specialButtonListener.getClass().getName());
         }
 
-        setLayoutParams(new FrameLayout.LayoutParams((int) properties.width, (int) properties.height));
+        setLayoutParams(new FrameLayout.LayoutParams((int) properties.getWidth(), (int) properties.getHeight() ));
+    }
+
+    public void setBackground(){
+        GradientDrawable gd = new GradientDrawable();
+        gd.setColor(mProperties.bgColor);
+        gd.setStroke(computeStrokeWidth(mProperties.strokeWidth), mProperties.strokeColor);
+        gd.setCornerRadius(computeCornerRadius(mProperties.cornerRadius));
+
+        setBackground(gd);
+    }
+
+    public int computeStrokeWidth(float widthInPercent){
+        float maxSize = Math.max(mProperties.getWidth(), mProperties.getHeight());
+        return (int)((maxSize/2) * (widthInPercent/100));
+    }
+
+    public float computeCornerRadius(float radiusInPercent){
+        float minSize = Math.min(mProperties.getWidth(), mProperties.getHeight());
+        return (minSize/2) * (radiusInPercent/100);
     }
 
     @Override
     public void setLayoutParams(ViewGroup.LayoutParams params) {
         super.setLayoutParams(params);
 
-        mProperties.width = params.width;
-        mProperties.height = params.height;
+        mProperties.setWidth(params.width);
+        mProperties.setHeight(params.height);
+        setBackground();
+
         
         // Re-calculate position
         mProperties.update();
@@ -146,12 +155,12 @@ public class ControlButton extends androidx.appcompat.widget.AppCompatButton imp
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
         if (mChecked) {
-            canvas.drawRect(0, getHeight() - 10 * mScaleAt, getWidth(), getHeight(), mRectPaint);
+            canvas.drawRoundRect(0, 0, getWidth(), getHeight(), mProperties.cornerRadius, mProperties.cornerRadius, mRectPaint);
         }
     }
 
     @Override
-    public boolean onLongClick(View p1) {
+    public boolean onLongClick(View v) {
         if (mCanTriggerLongClick && mModifiable) {
             if (mHandleView.isShowing()) {
                 mHandleView.hide();
@@ -161,7 +170,7 @@ public class ControlButton extends androidx.appcompat.widget.AppCompatButton imp
                 }
                 
                 try {
-                    mHandleView.show();
+                    mHandleView.show(this);
                 } catch (Throwable th) {
                     th.printStackTrace();
                 }
@@ -170,13 +179,14 @@ public class ControlButton extends androidx.appcompat.widget.AppCompatButton imp
         
         return mCanTriggerLongClick;
     }
-    
+
+
     private void setHolding(boolean isDown) {
         if (mProperties.holdAlt) {
             CallbackBridge.holdingAlt = isDown;
             MainActivity.sendKeyPress(LWJGLGLFWKeycode.GLFW_KEY_LEFT_ALT,0,isDown);
             System.out.println("holdingAlt="+CallbackBridge.holdingAlt);
-        } if (mProperties.keycode == LWJGLGLFWKeycode.GLFW_KEY_CAPS_LOCK) {
+        } if (mProperties.keycodes[0] == LWJGLGLFWKeycode.GLFW_KEY_CAPS_LOCK) {
             CallbackBridge.holdingCapslock = isDown;
             //MainActivity.sendKeyPress(LWJGLGLFWKeycode.GLFW_KEY_CAPS_LOCK,0,isDown);
             System.out.println("holdingCapslock="+CallbackBridge.holdingCapslock);
@@ -184,7 +194,7 @@ public class ControlButton extends androidx.appcompat.widget.AppCompatButton imp
             CallbackBridge.holdingCtrl = isDown;
             MainActivity.sendKeyPress(LWJGLGLFWKeycode.GLFW_KEY_LEFT_CONTROL,0,isDown);
             System.out.println("holdingCtrl="+CallbackBridge.holdingCtrl);
-        } if (mProperties.keycode == LWJGLGLFWKeycode.GLFW_KEY_NUM_LOCK) {
+        } if (mProperties.keycodes[0] == LWJGLGLFWKeycode.GLFW_KEY_NUM_LOCK) {
             CallbackBridge.holdingNumlock = isDown;
             //MainActivity.sendKeyPress(LWJGLGLFWKeycode.GLFW_KEY_NUM_LOCK,0,isDown);
             System.out.println("holdingNumlock="+CallbackBridge.holdingNumlock);
@@ -195,45 +205,46 @@ public class ControlButton extends androidx.appcompat.widget.AppCompatButton imp
         } 
     }
 
-    private float moveX, moveY;
-    private float downX, downY;
+    protected float moveX, moveY;
+    protected float downX, downY;
     @Override
     public boolean onTouchEvent(MotionEvent event) {
         if (!mModifiable) {
             mCanTriggerLongClick = false;
-            if(event.getAction() == MotionEvent.ACTION_MOVE && CallbackBridge.isGrabbing() && mProperties.passThruEnabled) {
+            if (event.getAction() == MotionEvent.ACTION_MOVE && CallbackBridge.isGrabbing() && mProperties.passThruEnabled) {
                 MinecraftGLView v = ((ControlLayout) this.getParent()).findViewById(R.id.main_game_render_view);
-                if(v != null) {
+                if (v != null) {
                     v.dispatchTouchEvent(event);
                     return true;
                 }
             }
-            if (mProperties.keycode >= 0) {
-                if (!mProperties.isToggle) {
-                    switch (event.getActionMasked()) {
-                        case MotionEvent.ACTION_DOWN: // 0
-                        case MotionEvent.ACTION_POINTER_DOWN: // 5
-                            setHolding(true);
-                            MainActivity.sendKeyPress(mProperties.keycode, CallbackBridge.getCurrentMods(), true);
-                            break;
-                        case MotionEvent.ACTION_UP: // 1
-                        case MotionEvent.ACTION_CANCEL: // 3
-                        case MotionEvent.ACTION_POINTER_UP: // 6
-                            setHolding(false);
-                            MainActivity.sendKeyPress(mProperties.keycode, CallbackBridge.getCurrentMods(), false);
-                            break;
-                        default:
-                            return false;
-                    }
 
-                } else if (mGestureDetector.onTouchEvent(event)) {
-                    mChecked = !mChecked;
-                    invalidate();
-                    setHolding(mChecked);
-                    MainActivity.sendKeyPress(mProperties.keycode, CallbackBridge.getCurrentMods(), mChecked);
-                }
-                return true;
+            switch (event.getActionMasked()) {
+                case MotionEvent.ACTION_DOWN: // 0
+                case MotionEvent.ACTION_POINTER_DOWN: // 5
+                    if(!mProperties.isToggle){
+                        setHolding(true);
+                        sendKeyPresses(event, true);
+                    }
+                    break;
+                case MotionEvent.ACTION_UP: // 1
+                case MotionEvent.ACTION_CANCEL: // 3
+                case MotionEvent.ACTION_POINTER_UP: // 6
+                    if(mProperties.isToggle){
+                        mChecked = !mChecked;
+                        invalidate();
+                        setHolding(mChecked);
+                        sendKeyPresses(event, mChecked);
+                        break;
+                    }
+                    setHolding(false);
+                    sendKeyPresses(event,false);
+                    break;
+                default:
+                    return false;
             }
+            return true;
+
         } else {
             if (mGestureDetector.onTouchEvent(event)) {
                 mCanTriggerLongClick = true;
@@ -257,7 +268,6 @@ public class ControlButton extends androidx.appcompat.widget.AppCompatButton imp
                         setTranslationX(moveX);
                         setTranslationY(moveY);
                     }
-
                     break;
             }
         }
@@ -265,8 +275,18 @@ public class ControlButton extends androidx.appcompat.widget.AppCompatButton imp
         return super.onTouchEvent(event);
     }
 
-    public void setModifiable(boolean z) {
-        mModifiable = z;
+    public void sendKeyPresses(MotionEvent event, boolean isDown){
+        for(int keycode : mProperties.keycodes){
+            if(keycode >= 0){
+                MainActivity.sendKeyPress(keycode, CallbackBridge.getCurrentMods(), isDown);
+            }else {
+                super.onTouchEvent(event);
+            }
+        }
+    }
+
+    public void setModifiable(boolean isModifiable) {
+        mModifiable = isModifiable;
     }
     
     private void setModified(boolean modified) {

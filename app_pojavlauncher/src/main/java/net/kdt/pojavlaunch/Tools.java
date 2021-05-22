@@ -395,10 +395,13 @@ public final class Tools
     }
 
     public static float dpToPx(float dp) {
-        // 921600 = 1280 * 720, default scale
-        // TODO better way to scaling
-        float scaledDp = dp; // / DisplayMetrics.DENSITY_XHIGH * currentDisplayMetrics.densityDpi;
-        return (scaledDp * currentDisplayMetrics.density);
+        //Better hope for the currentDisplayMetrics to be good
+        return dp * currentDisplayMetrics.density;
+    }
+
+    public static float pxToDp(float px){
+        //Better hope for the currentDisplayMetrics to be good
+        return px / currentDisplayMetrics.density;
     }
 
     public static void copyAssetFile(Context ctx, String fileName, String output, boolean overwrite) throws IOException {
@@ -898,4 +901,21 @@ public final class Tools
         }
     }
 
+    public static InputDevice grabFirstGamepad() {
+
+        int[] deviceIds = InputDevice.getDeviceIds();
+        for (int deviceId : deviceIds) {
+            InputDevice dev = InputDevice.getDevice(deviceId);
+            int sources = dev.getSources();
+
+            // Verify that the device has gamepad buttons, control sticks, or both.
+            if (((sources & InputDevice.SOURCE_GAMEPAD) == InputDevice.SOURCE_GAMEPAD)
+                    || ((sources & InputDevice.SOURCE_JOYSTICK)
+                    == InputDevice.SOURCE_JOYSTICK)) {
+                // This device is a game controller. Store its device ID.
+                return dev;
+            }
+        }
+        return null;
+    }
 }
