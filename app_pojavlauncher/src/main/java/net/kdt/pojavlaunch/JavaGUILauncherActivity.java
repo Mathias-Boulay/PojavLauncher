@@ -104,8 +104,8 @@ public class JavaGUILauncherActivity extends LoggableActivity implements View.On
                             prevX = x;
                             prevY = y;
                         }
-                        float mouseX = mousePointer.getTranslationX();
-                        float mouseY = mousePointer.getTranslationY();
+                        float mouseX = mousePointer.getX();
+                        float mouseY = mousePointer.getY();
 
                         if (gestureDetector.onTouchEvent(event)) {
 
@@ -246,13 +246,13 @@ public class JavaGUILauncherActivity extends LoggableActivity implements View.On
     }
 
     public void placeMouseAdd(float x, float y) {
-        this.mousePointer.setTranslationX(mousePointer.getTranslationX() + x);
-        this.mousePointer.setTranslationY(mousePointer.getTranslationY() + y);
+        this.mousePointer.setX(mousePointer.getX() + x);
+        this.mousePointer.setY(mousePointer.getY() + y);
     }
 
     public void placeMouseAt(float x, float y) {
-        this.mousePointer.setTranslationX(x);
-        this.mousePointer.setTranslationY(y);
+        this.mousePointer.setX(x);
+        this.mousePointer.setY(y);
     }
 
     void sendScaledMousePosition(float x, float y){
