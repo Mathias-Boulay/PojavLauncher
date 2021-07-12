@@ -2,6 +2,7 @@ package net.kdt.pojavlaunch;
 
 import android.app.*;
 import android.content.*;
+import android.content.pm.PackageManager;
 import android.graphics.*;
 import android.os.*;
 import android.util.*;
@@ -69,6 +70,7 @@ public class BaseMainActivity extends LoggableActivity {
             }
         }
     };
+
     private MinecraftGLView minecraftGLView;
     private int guiScale;
 
@@ -92,7 +94,7 @@ public class BaseMainActivity extends LoggableActivity {
     private NavigationView.OnNavigationItemSelectedListener gameActionListener;
     public NavigationView.OnNavigationItemSelectedListener ingameControlsEditorListener;
 
-    protected JMinecraftVersionList.Version mVersionInfo;
+    protected volatile JMinecraftVersionList.Version mVersionInfo;
 
     private View.OnTouchListener glTouchListener;
 
@@ -499,8 +501,8 @@ public class BaseMainActivity extends LoggableActivity {
 
                         //Load Minecraft options:
                         MCOptionUtils.load();
-                        MCOptionUtils.set("overrideWidth", ""+CallbackBridge.windowWidth);
-                        MCOptionUtils.set("overrideHeight", ""+CallbackBridge.windowHeight);
+                        MCOptionUtils.set("overrideWidth", String.valueOf(CallbackBridge.windowWidth));
+                        MCOptionUtils.set("overrideHeight", String.valueOf(CallbackBridge.windowHeight));
                         MCOptionUtils.save();
                         getMcScale();
                         // Should we do that?
@@ -647,21 +649,59 @@ public class BaseMainActivity extends LoggableActivity {
 
     private void runCraft() throws Throwable {
         appendlnToLog("--------- beggining with launcher debug");
+        appendlnToLog("Info: Launcher version: " + BuildConfig.VERSION_NAME);
+        if (LauncherPreferences.PREF_RENDERER.equals("vulkan_zink")) {
+            checkVulkanZinkIsSupported();
+        }
         checkLWJGL3Installed();
         
-        Map<String, String> jreReleaseList = JREUtils.readJREReleaseProperties();
+        jreReleaseList = JREUtils.readJREReleaseProperties();
         JREUtils.checkJavaArchitecture(this, jreReleaseList.get("OS_ARCH"));
         checkJavaArgsIsLaunchable(jreReleaseList.get("JAVA_VERSION"));
         // appendlnToLog("Info: Custom Java arguments: \"" + LauncherPreferences.PREF_CUSTOM_JAVA_ARGS + "\"");
-        
-        JREUtils.redirectAndPrintJRELog(this, mProfile.accessToken);
+
+        appendlnToLog("Info: Selected Minecraft version: " + mVersionInfo.id +
+            ((mVersionInfo.inheritsFrom == null || mVersionInfo.inheritsFrom.equals(mVersionInfo.id)) ?
+            "" : " (" + mVersionInfo.inheritsFrom + ")"));
+
+        JREUtils.redirectAndPrintJRELog(this);
         Tools.launchMinecraft(this, mProfile, mProfile.selectedVersion);
     }
     
     private void checkJavaArgsIsLaunchable(String jreVersion) throws Throwable {
         appendlnToLog("Info: Custom Java arguments: \"" + LauncherPreferences.PREF_CUSTOM_JAVA_ARGS + "\"");
-        
+
+/*
         if (jreVersion.equals("1.8.0")) return;
+
+        // Test java
+        ShellProcessOperation shell = new ShellProcessOperation(new ShellProcessOperation.OnPrintListener(){
+            @Override
+            public void onPrintLine(String text){
+                appendlnToLog("[JRETest] " + text);
+            }
+        });
+        JREUtils.setJavaEnvironment(this, shell);
+        
+        List<String> testArgs = new ArrayList<String>();
+        testArgs.add(Tools.homeJreDir + "/bin/java");
+        Tools.getJavaArgs(this, testArgs);
+        testArgs.add("-version");
+        
+        new File(Tools.homeJreDir + "/bin/java").setExecutable(true);
+        
+        // shell.writeToProcess("chmod 777 " + Tools.homeJreDir + "/bin/java");
+        shell.writeToProcess("set -e");
+        shell.writeToProcess(testArgs.toArray(new String[0]));
+        
+        int exitCode = shell.waitFor();
+        appendlnToLog("Info: java test command exited with " + exitCode);
+        
+        if (exitCode != 0) {
+            appendlnToLog("Error: the test returned non-zero exit code.");
+            // throw new RuntimeException(getString(R.string.mcn_check_fail_java));
+        }
+    */
     }
 
     private void checkLWJGL3Installed() {
@@ -671,6 +711,16 @@ public class BaseMainActivity extends LoggableActivity {
             throw new RuntimeException(getString(R.string.mcn_check_fail_lwjgl));
         } else {
             appendlnToLog("Info: LWJGL3 directory: " + Arrays.toString(lwjgl3dir.list()));
+        }
+    }
+
+    private void checkVulkanZinkIsSupported() {
+        if (Tools.CURRENT_ARCHITECTURE.equals("x86")
+         || Build.VERSION.SDK_INT < 25
+         || !getPackageManager().hasSystemFeature(PackageManager.FEATURE_VULKAN_HARDWARE_LEVEL)
+         || !getPackageManager().hasSystemFeature(PackageManager.FEATURE_VULKAN_HARDWARE_VERSION)) {
+            appendlnToLog("Error: Vulkan Zink renderer is not supported!");
+            throw new RuntimeException(getString(R.string. mcn_check_fail_vulkan_support));
         }
     }
     
@@ -886,6 +936,7 @@ public class BaseMainActivity extends LoggableActivity {
 
     public void getMcScale() {
         //Get the scale stored in game files, used auto scale if found or if the stored scaled is bigger than the authorized size.
+        MCOptionUtils.load();
         String str = MCOptionUtils.get("guiScale");
         this.guiScale = (str == null ? 0 :Integer.parseInt(str));
         

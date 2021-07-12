@@ -9,6 +9,8 @@ import net.kdt.pojavlaunch.Tools;
 
 import android.content.*;
 
+import static net.kdt.pojavlaunch.prefs.LauncherPreferences.PREF_NOTCH_SIZE;
+
 public class LauncherPreferenceFragment extends PreferenceFragmentCompat implements SharedPreferences.OnSharedPreferenceChangeListener
 {
     @Override
@@ -16,9 +18,9 @@ public class LauncherPreferenceFragment extends PreferenceFragmentCompat impleme
         addPreferencesFromResource(R.xml.pref_main);
 		
         // Disable freeform mode in Android 6.0 and below.
-        findPreference("freeform").setVisible(Build.VERSION.SDK_INT >= 24);
+        findPreference("freeform").setVisible(Build.VERSION.SDK_INT >= Build.VERSION_CODES.N);
         //Disable notch checking behavior on android 8.1 and below.
-        findPreference("ignoreNotch").setVisible(Build.VERSION.SDK_INT >= 28);
+        findPreference("ignoreNotch").setVisible(Build.VERSION.SDK_INT >= Build.VERSION_CODES.P && PREF_NOTCH_SIZE != 0);
 		
         CustomSeekBarPreference seek2 = (CustomSeekBarPreference) findPreference("timeLongPressTrigger");
         seek2.setMin(100);
@@ -44,8 +46,8 @@ public class LauncherPreferenceFragment extends PreferenceFragmentCompat impleme
 
 	    CustomSeekBarPreference seek6 = (CustomSeekBarPreference) findPreference("mousespeed");
         seek6.setMin(25);
-        seek6.setValue((int)(LauncherPreferences.PREF_MOUSESPEED*100f));
         seek6.setMax(300);
+	  seek6.setValue((int)(LauncherPreferences.PREF_MOUSESPEED*100f));
         seek6.setSuffix(" %");
 
         int freeMem = (int) (Runtime.getRuntime().freeMemory() / 1048576l);

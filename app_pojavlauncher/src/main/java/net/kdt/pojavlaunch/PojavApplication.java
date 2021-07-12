@@ -34,7 +34,8 @@ public class PojavApplication extends Application
 					crashStream.append(" - Time: " + DateFormat.getDateTimeInstance().format(new Date()) + "\n");
 					crashStream.append(" - Device: " + Build.PRODUCT + " " + Build.MODEL + "\n");
 					crashStream.append(" - Android version: " + Build.VERSION.RELEASE + "\n");
-					crashStream.append(" - Crash stack trace:\n");
+                    crashStream.append(" - Crash stack trace:\n");
+                    crashStream.append(" - Launcher version: " + BuildConfig.VERSION_NAME + "\n");
 					crashStream.append(Log.getStackTraceString(th));
 					crashStream.close();
 				} catch (Throwable th2) {
@@ -54,7 +55,7 @@ public class PojavApplication extends Application
 			Tools.APP_NAME = getResources().getString(R.string.app_short_name);
 			
 			Tools.DIR_DATA = getDir("files", MODE_PRIVATE).getParent();
-            Tools.DIR_HOME_JRE = Tools.DIR_DATA + "/jre_runtime";
+            Tools.DIR_HOME_JRE = Tools.DIR_DATA + "/jre_runtime".replace("/data/user/0", "/data/data");
             Tools.DIR_ACCOUNT_OLD = Tools.DIR_DATA + "/Users";
             Tools.DIR_ACCOUNT_NEW = Tools.DIR_DATA + "/accounts";
             // Tools.FILE_ACCOUNT_JSON = getFilesDir().getAbsolutePath() + "/account_profiles.json";

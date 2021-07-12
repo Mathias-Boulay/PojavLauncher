@@ -283,8 +283,9 @@ public class JavaGUILauncherActivity extends LoggableActivity implements View.On
     }
 
     public int launchJavaRuntime(File modFile, String javaArgs) {
-        JREUtils.redirectAndPrintJRELog(this, null);
+        JREUtils.redirectAndPrintJRELog(this);
         try {
+            jreReleaseList = JREUtils.readJREReleaseProperties();
             List<String> javaArgList = new ArrayList<String>();
 
             // Enable Caciocavallo
