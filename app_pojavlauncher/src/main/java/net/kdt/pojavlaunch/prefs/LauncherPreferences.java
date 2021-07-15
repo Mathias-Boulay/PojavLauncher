@@ -2,6 +2,7 @@ package net.kdt.pojavlaunch.prefs;
 
 import android.content.*;
 import net.kdt.pojavlaunch.*;
+import net.kdt.pojavlaunch.multirt.MultiRTUtils;
 
 public class LauncherPreferences
 {
@@ -30,6 +31,7 @@ public class LauncherPreferences
     public static boolean PREF_DISABLE_GESTURES = false;
     public static float PREF_MOUSESPEED = 1f;
     public static int PREF_RAM_ALLOCATION=300;
+    public static String PREF_DEFAULT_RUNTIME;
     public static void loadPreferences() {
         PREF_RENDERER = DEFAULT_PREF.getString("renderer", "opengles2");
 
@@ -109,6 +111,16 @@ public class LauncherPreferences
                 DEFAULT_PREF.edit().putString("javaArgs",
                     PREF_CUSTOM_JAVA_ARGS.replace(arg, "")).commit();
             }
+        }
+        if(DEFAULT_PREF.contains("defaultRuntime")) {
+            PREF_DEFAULT_RUNTIME = DEFAULT_PREF.getString("defaultRuntime","");
+        }else{
+            if(MultiRTUtils.getRuntimes().size() < 1) {
+                PREF_DEFAULT_RUNTIME = "";
+                return;
+            }
+            PREF_DEFAULT_RUNTIME = MultiRTUtils.getRuntimes().get(0).name;
+            LauncherPreferences.DEFAULT_PREF.edit().putString("defaultRuntime",LauncherPreferences.PREF_DEFAULT_RUNTIME).apply();
         }
     }
 }
