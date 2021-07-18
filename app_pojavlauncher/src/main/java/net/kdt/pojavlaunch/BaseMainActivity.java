@@ -573,6 +573,7 @@ public class BaseMainActivity extends LoggableActivity {
         for(int i = 0; i < ev.getPointerCount(); i++) {
             if(ev.getToolType(i) == MotionEvent.TOOL_TYPE_MOUSE) {
                 mouseCursorIndex = i;
+                break;
             }
         }
         if(mouseCursorIndex == -1) return false; // we cant consoom that, theres no mice!
@@ -609,9 +610,10 @@ public class BaseMainActivity extends LoggableActivity {
 
     @Override
     public boolean dispatchKeyEvent(KeyEvent event) {
-        System.out.println(event);
-        if(event.getRepeatCount() != 0) return true; //We consume but no need to recheck since it was already sent once.
 
+        System.out.println(event);
+        if(event.getRepeatCount() != 0 || event.getAction() == KeyEvent.ACTION_MULTIPLE || event.getFlags() == KeyEvent.FLAG_FALLBACK) return true; //We consume but no need to recheck since it was already sent once.
+        
         if(Gamepad.isGamepadEvent(event)){
             if(gamepad == null){
                 gamepad = new Gamepad(this, event.getDevice());
