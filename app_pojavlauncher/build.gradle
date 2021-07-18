@@ -2,6 +2,14 @@ apply plugin: 'com.android.application'
 
 def getDate() { return new Date().format('yyyyMMdd')}
 
+def getDateSeconds() { 
+    if(System.getenv("GITHUB_ACTIONS").equals("true")) {
+        return 9934841+Integer.parseInt(System.getenv("GITHUB_RUN_NUMBER"))
+    }else{
+        return 172005
+    }
+}
+
 def getVersionName = {
     // Get the last version tag, as well as the short head of the last commit
     ByteArrayOutputStream TAG = new ByteArrayOutputStream()
@@ -45,13 +53,19 @@ android {
             keyAlias "androiddebugkey"
             keyPassword "android"
         }
+        googlePlayBuild {
+            storeFile file("upload.jks")
+            storePassword System.getenv("GPLAY_KEYSTORE_PASSWORD")
+            keyAlias "upload"
+            keyPassword System.getenv("GPLAY_KEYSTORE_PASSWORD")
+        }
     }
 	
     defaultConfig {
         applicationId "net.kdt.pojavlaunch"
         minSdkVersion 21
         targetSdkVersion 29
-        versionCode 156249
+        versionCode getDateSeconds()
         versionName getVersionName()
         multiDexEnabled true //important
     }
@@ -72,6 +86,10 @@ android {
             // multiDexEnabled = true
            // debuggable = true
         }
+        gplay {
+            initWith release
+            signingConfig signingConfigs.googlePlayBuild
+        }
     }
 	
 	externalNativeBuild {
@@ -83,6 +101,11 @@ android {
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_8
         targetCompatibility JavaVersion.VERSION_1_8
+    }
+    bundle {
+        language {
+            enableSplit = false
+        }
     }
     buildToolsVersion '30.0.2'
 }
