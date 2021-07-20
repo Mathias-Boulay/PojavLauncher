@@ -610,10 +610,9 @@ public class BaseMainActivity extends LoggableActivity {
 
     @Override
     public boolean dispatchKeyEvent(KeyEvent event) {
-
+        if(event.getRepeatCount() != 0 || event.getKeyCode() == KeyEvent.KEYCODE_UNKNOWN || (event.getFlags() & KeyEvent.FLAG_FALLBACK) == KeyEvent.FLAG_FALLBACK) return true; //We consume but no need to recheck since it was already sent once.
         System.out.println(event);
-        if(event.getRepeatCount() != 0 || event.getAction() == KeyEvent.ACTION_MULTIPLE || event.getFlags() == KeyEvent.FLAG_FALLBACK) return true; //We consume but no need to recheck since it was already sent once.
-        
+
         if(Gamepad.isGamepadEvent(event)){
             if(gamepad == null){
                 gamepad = new Gamepad(this, event.getDevice());
@@ -947,7 +946,7 @@ public class BaseMainActivity extends LoggableActivity {
         return true;
     }
 
-    public void getMcScale() {
+    public int getMcScale() {
         //Get the scale stored in game files, used auto scale if found or if the stored scaled is bigger than the authorized size.
         MCOptionUtils.load();
         String str = MCOptionUtils.get("guiScale");
@@ -958,6 +957,9 @@ public class BaseMainActivity extends LoggableActivity {
         if(scale < this.guiScale || guiScale == 0){
             this.guiScale = scale;
         }
+
+        if(gamepad != null) gamepad.notifyGUISizeChange(this.guiScale);
+        return this.guiScale;
     }
 
     public int handleGuiBar(int x, int y) {
